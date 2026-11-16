@@ -12,6 +12,7 @@ documentation, commit messages, identifiers and result labels.
 make setup   # install the pre-commit hooks (gitleaks)
 make help    # list the targets
 make lint    # static checks
+make test    # Python unit tests (see README.md for the virtual environment)
 ```
 
 ## What never goes into Git

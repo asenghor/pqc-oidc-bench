@@ -6,7 +6,7 @@ COMPOSE_FILE := compose/docker-compose.yml
 TF_ENV       := terraform/envs/lab
 TF_BOOTSTRAP := terraform/bootstrap
 
-.PHONY: help setup lint secrets-scan local-up local-down smoke campaign report \
+.PHONY: help setup lint test secrets-scan local-up local-down smoke campaign report \
         aws-bootstrap aws-plan aws-apply aws-destroy
 
 # Internal helper: fails explicitly until the phase is delivered.
@@ -28,6 +28,9 @@ lint: ## Run every static check available on this machine
 	@if command -v yamllint > /dev/null; then yamllint .; else echo "yamllint not installed locally: run by CI"; fi
 	@if [ -f $(COMPOSE_FILE) ]; then docker compose -f $(COMPOSE_FILE) config --quiet; \
 	else echo "docker compose config: no stack yet, step skipped"; fi
+
+test: ## Run the Python unit tests (needs requirements-dev.txt and the service requirements)
+	python -m pytest
 
 secrets-scan: ## Scan the whole Git history with gitleaks (run before every push)
 	gitleaks git --config .gitleaks.toml --redact --verbose .

@@ -48,7 +48,9 @@ signatures, FN-DSA, and reference tokens with introspection.
 | Phase | Content | State |
 | :-- | :-- | :-- |
 | 0 | Preflight: repository, guardrails, CI | done |
-| 1 | Local bench: emitter, echo, five intermediaries, harness | to do |
+| 1a | Local bench: sizes, payload profiles, emitter, echo, unit tests | done |
+| 1b | Local bench: five intermediaries over TLS, `default/` profiles, Compose stack, local CA | to do |
+| 1c | Local bench: harness, reduced matrix, `make local-up`, `make smoke` | to do |
 | 2 | AWS foundation: network, compute, budget, bootstrap | to do |
 | 3 | Managed intermediaries: ALB, API Gateway, CloudFront, WAF | to do |
 | 4 | Relying parties and browsers | to do |
@@ -68,7 +70,27 @@ make local-up
 make smoke
 ```
 
-These targets ship with phase 1. `make help` lists every target and its state.
+These targets ship with slices 1b and 1c. `make help` lists every target and
+its state.
+
+What already runs is the unit test suite, which includes the byte-exact
+length proof of the calibrated mode for every variant, payload profile and
+header variant:
+
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements-dev.txt -r services/emitter/requirements.txt -r services/echo/requirements.txt
+make test
+```
+
+## Layout
+
+| Path | Content |
+| :-- | :-- |
+| [bench/sizes.yaml](bench/sizes.yaml) | Signature and public key sizes per variant, each with its source |
+| [bench/profiles/](bench/profiles/) | Token payload profiles |
+| [services/emitter/](services/emitter/) | Calibrated tokens, JWKS, introspection, PAR |
+| [services/echo/](services/echo/) | Witness backend |
 
 ## AWS deployment
 
@@ -80,6 +102,13 @@ be published in this repository.
 
 - The default mode does not produce real post-quantum signatures: it measures
   the effect of token **size**, not the computation cost.
+- FIPS 206 (FN-DSA) was not published when the sizes were collected. The
+  FN-DSA sizes come from an IETF draft and are provisional; see
+  [bench/sizes.yaml](bench/sizes.yaml).
+- Composite signatures with an ECDSA component have a variable length; the
+  bench calibrates on the maximum given by RFC 10073.
+- With the `x5c` header variant the target length relies on a model
+  certificate; see [services/emitter/README.md](services/emitter/README.md).
 - Out of scope: post-quantum TLS and hybrid key exchange, X.509 certificates
   and mTLS, WebAuthn, SAML, CPU performance of signing and verification, high
   availability, production hardening.
