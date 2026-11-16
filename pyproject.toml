@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+testpaths = ["services"]
+pythonpath = ["services/emitter", "services/echo"]
+addopts = "--import-mode=importlib --strict-markers -q"

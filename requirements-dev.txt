@@ -1,2 +1,6 @@
-# Checking tools run by CI and by `make lint`.
+# Checking and testing tools run by CI, `make lint` and `make test`.
+# Service dependencies live in services/<name>/requirements.txt.
+httpx2==2.16.2
+PyJWT[crypto]==2.15.1
+pytest==9.2.0
 yamllint==1.38.0
