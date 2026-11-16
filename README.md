@@ -48,9 +48,7 @@ signatures, FN-DSA, and reference tokens with introspection.
 | Phase | Content | State |
 | :-- | :-- | :-- |
 | 0 | Preflight: repository, guardrails, CI | done |
-| 1a | Local bench: sizes, payload profiles, emitter, echo, unit tests | done |
-| 1b | Local bench: five intermediaries over TLS, `default/` profiles, Compose stack, local CA | to do |
-| 1c | Local bench: harness, reduced matrix, `make local-up`, `make smoke` | to do |
+| 1 | Local bench: sizes, emitter, echo, five intermediaries over TLS, harness, reduced matrix | done |
 | 2 | AWS foundation: network, compute, budget, bootstrap | to do |
 | 3 | Managed intermediaries: ALB, API Gateway, CloudFront, WAF | to do |
 | 4 | Relying parties and browsers | to do |
@@ -58,7 +56,8 @@ signatures, FN-DSA, and reference tokens with introspection.
 | 6 | Campaign and reporting | to do |
 | 7 | Teardown and reproducibility | to do |
 
-No measurement result has been published yet.
+No measurement result has been published yet: the local runs are written
+outside the versioned tree.
 
 ## Local reproduction
 
@@ -70,16 +69,21 @@ make local-up
 make smoke
 ```
 
-These targets ship with slices 1b and 1c. `make help` lists every target and
-its state.
+`make local-up` builds and starts the stack over HTTPS, with a certificate
+authority drawn at startup. `make smoke` sends an ES256 token through every
+intermediary, checks that a 64 kB header is rejected and attributed to the
+right component in every two-hop chain, then runs the reduced matrix and
+writes its results under `results/_local/`. `make local-down` stops the stack
+and discards its volume. `make help` lists every target and its state.
 
-What already runs is the unit test suite, which includes the byte-exact
-length proof of the calibrated mode for every variant, payload profile and
-header variant:
+The unit test suite needs Python only. It includes the byte-exact length
+proof of the calibrated mode for every variant, payload profile and header
+variant, and the injected truncation that the harness must report as a
+silent degradation:
 
 ```bash
 python -m venv .venv && . .venv/bin/activate
-pip install -r requirements-dev.txt -r services/emitter/requirements.txt -r services/echo/requirements.txt
+pip install -r requirements-dev.txt $(printf -- '-r %s ' services/*/requirements.txt)
 make test
 ```
 
@@ -91,6 +95,9 @@ make test
 | [bench/profiles/](bench/profiles/) | Token payload profiles |
 | [services/emitter/](services/emitter/) | Calibrated tokens, JWKS, introspection, PAR |
 | [services/echo/](services/echo/) | Witness backend |
+| [services/harness/](services/harness/) | Campaign driver: channels, verdicts, attribution, threshold search |
+| [bench/matrix.yaml](bench/matrix.yaml) | Reduced test matrix |
+| [compose/](compose/) | Compose stack, ephemeral certificate authority, proxy profiles |
 
 ## AWS deployment
 
@@ -107,6 +114,7 @@ be published in this repository.
   [bench/sizes.yaml](bench/sizes.yaml).
 - Composite signatures with an ECDSA component have a variable length; the
   bench calibrates on the maximum given by RFC 10073.
+- Local chains hold at most two intermediaries.
 - With the `x5c` header variant the target length relies on a model
   certificate; see [services/emitter/README.md](services/emitter/README.md).
 - Out of scope: post-quantum TLS and hybrid key exchange, X.509 certificates
