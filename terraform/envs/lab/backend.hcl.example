@@ -1,0 +1,5 @@
+# Partial backend configuration, to copy to backend.hcl (not versioned), then:
+#   terraform init -backend-config=backend.hcl
+# Placeholder values: the real state bucket name never appears in the repository.
+bucket = "name-of-the-state-bucket"
+region = "us-east-1"

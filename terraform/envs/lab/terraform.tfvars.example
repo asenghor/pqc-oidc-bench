@@ -1,0 +1,29 @@
+# Example to copy to terraform.tfvars (not versioned). Every value below is a
+# placeholder.
+
+# AWS CLI / SSO profile. Never a plaintext access key.
+aws_profile = "my-sso-profile"
+
+# Deployment region. The CloudFront certificate always lives in us-east-1.
+region = "us-east-1"
+
+# Only sources allowed to reach the origin (RFC 5737 documentation range).
+allowed_cidrs = ["203.0.113.10/32"]
+
+# Domain name for the ALB certificate. Empty string: no domain.
+domain_name = ""
+
+# Monthly budget cap, with alerts at 50 %, 80 % and 100 %.
+budget_limit_usd   = 50
+budget_alert_email = "alerts@example.com"
+
+# Owner tag set on every resource.
+owner = "first-last"
+
+# Switches for billable components. Everything is off by default.
+enable_alb        = false
+enable_apigw_http = false
+enable_apigw_rest = false
+enable_cloudfront = false
+enable_waf        = false
+enable_keycloak   = false
