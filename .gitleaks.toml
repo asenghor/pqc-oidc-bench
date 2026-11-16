@@ -1,0 +1,35 @@
+# Secret detection for the bench. Extends the default gitleaks rules with the
+# patterns banned by the public repository rules (see CONTRIBUTING.md).
+title = "pqc-oidc-bench"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "aws-arn-with-account-id"
+description = "AWS ARN containing an account ID"
+regex = '''arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:\d{12}:'''
+keywords = ["arn:aws"]
+
+  [[rules.allowlists]]
+  description = "Placeholder accounts used in documentation"
+  regexes = ['''arn:aws[a-z-]*:[a-z0-9-]*:[a-z0-9-]*:(?:123456789012|000000000000|111122223333):''']
+
+[[rules]]
+id = "aws-managed-endpoint-hostname"
+description = "Hostname of an AWS managed entry point (ALB, CloudFront, API Gateway)"
+regex = '''[a-zA-Z0-9][a-zA-Z0-9.-]*\.(?:elb\.amazonaws\.com|cloudfront\.net|execute-api\.[a-z0-9-]+\.amazonaws\.com)'''
+keywords = ["elb.amazonaws.com", "cloudfront.net", "execute-api"]
+
+[[rules]]
+id = "public-ipv4-address"
+description = "Public IPv4 address (allowed_cidrs, instance IP, personal IP)"
+regex = '''\b(?:(?:25[0-5]|2[0-4]\d|1?\d?\d)\.){3}(?:25[0-5]|2[0-4]\d|1?\d?\d)\b'''
+
+  [[rules.allowlists]]
+  description = "Loopback, private ranges (RFC 1918), link-local, documentation ranges (RFC 5737)"
+  regexes = ['''^(?:0\.0\.0\.0|127\.|10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|169\.254\.|192\.0\.2\.|198\.51\.100\.|203\.0\.113\.|255\.)''']
+
+  [[rules.allowlists]]
+  description = "License text and lock files (four-part version numbers)"
+  paths = ['''^LICENSE$''', '''(?:^|/)package-lock\.json$''', '''(?:^|/)\.terraform\.lock\.hcl$''']

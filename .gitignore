@@ -1,0 +1,75 @@
+# --- Terraform: state, real variables, real backend --------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+backend.hcl
+!backend.hcl.example
+crash.log
+crash.*.log
+*.tfplan
+tfplan
+terraform-output*.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# --- Secrets, keys and certificates (generated at startup, never versioned) --
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.csr
+*.p12
+*.pfx
+*.jks
+*.srl
+compose/certs/
+secrets/
+lab-key*
+
+# --- Raw logs from the intermediaries and the instance -----------------------
+*.log
+logs/
+results/**/raw/
+results/**/logs/
+results/_local/
+
+# --- Python ------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# --- Node / Playwright -------------------------------------------------------
+node_modules/
+browser/test-results/
+browser/playwright-report/
+browser/blob-report/
+browser/.cache/
+
+# --- Java (Spring Boot relying party) ----------------------------------------
+target/
+*.class
+
+# --- Workstation -------------------------------------------------------------
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
