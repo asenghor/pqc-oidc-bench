@@ -1,0 +1,2 @@
+# Checking tools run by CI and by `make lint`.
+yamllint==1.38.0

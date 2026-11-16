@@ -1,0 +1,14 @@
+---
+# The docker, docker-compose, terraform and npm ecosystems will be added with
+# the phases that create their directories.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
