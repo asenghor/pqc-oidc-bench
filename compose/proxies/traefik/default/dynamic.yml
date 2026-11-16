@@ -1,0 +1,74 @@
+---
+# Traefik, default profile (dynamic configuration): routes and certificate.
+tls:
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /certs/traefik.crt
+        keyFile: /certs/traefik.key
+
+http:
+  middlewares:
+    # Role of this hop in the response. Traefik only applies it to routed
+    # requests: a response it produces before routing carries no hop header.
+    hop:
+      headers:
+        customResponseHeaders:
+          X-Hop-Traefik: proxied
+
+  routers:
+    # Two-hop chains: /via/<name>/ goes to that intermediary, which sends it
+    # to the echo backend. The request target is never rewritten. A longer
+    # rule has a higher priority.
+    via-nginx:
+      rule: PathPrefix(`/via/nginx/`)
+      entryPoints: [bench]
+      service: nginx
+      middlewares: [hop]
+      tls: {}
+    via-apache:
+      rule: PathPrefix(`/via/apache/`)
+      entryPoints: [bench]
+      service: apache
+      middlewares: [hop]
+      tls: {}
+    via-haproxy:
+      rule: PathPrefix(`/via/haproxy/`)
+      entryPoints: [bench]
+      service: haproxy
+      middlewares: [hop]
+      tls: {}
+    via-envoy:
+      rule: PathPrefix(`/via/envoy/`)
+      entryPoints: [bench]
+      service: envoy
+      middlewares: [hop]
+      tls: {}
+    echo:
+      rule: PathPrefix(`/`)
+      entryPoints: [bench]
+      service: echo
+      middlewares: [hop]
+      tls: {}
+
+  services:
+    echo:
+      loadBalancer:
+        servers:
+          - url: https://echo:8443
+    nginx:
+      loadBalancer:
+        servers:
+          - url: https://nginx:8443
+    apache:
+      loadBalancer:
+        servers:
+          - url: https://apache:8443
+    haproxy:
+      loadBalancer:
+        servers:
+          - url: https://haproxy:8443
+    envoy:
+      loadBalancer:
+        servers:
+          - url: https://envoy:8443

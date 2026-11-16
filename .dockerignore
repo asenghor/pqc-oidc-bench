@@ -1,7 +1,9 @@
 # The build context is the repository root: keep it to what images need.
 *
 !bench/sizes.yaml
+!bench/matrix.yaml
 !bench/profiles/
+!compose/ca/
 !services/
 services/*/tests/
 **/__pycache__/

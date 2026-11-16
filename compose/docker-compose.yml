@@ -1,0 +1,112 @@
+---
+# Base stack of the bench: emitter, echo and the five intermediaries.
+# Identical on a workstation and on the EC2 instance. Every listener is HTTPS.
+#
+#   make local-up     start it and wait until every component answers
+#   make smoke        run the smoke scenarios from the harness container
+#   make local-down   stop it and discard the volume (certificates, lab key)
+#
+# Third-party images are pinned by digest. No port is published on the host:
+# the harness runs inside the network.
+name: pqc-oidc-bench
+
+x-python-build: &python-build
+  context: ..
+
+x-proxy: &proxy
+  depends_on:
+    certs:
+      condition: service_completed_successfully
+  restart: "no"
+
+services:
+  # One-shot: ephemeral certificate authority, server certificates, lab key.
+  certs:
+    build:
+      <<: *python-build
+      dockerfile: compose/ca/Dockerfile
+    environment:
+      CERT_NAMES: emitter echo nginx apache haproxy envoy traefik
+    volumes:
+      - certs:/certs
+
+  emitter:
+    <<: *proxy
+    build:
+      <<: *python-build
+      dockerfile: services/emitter/Dockerfile
+    environment:
+      TLS_CERT_FILE: /certs/emitter.crt
+      TLS_KEY_FILE: /certs/emitter.key
+      EMITTER_ISSUER: https://emitter:8443
+    volumes:
+      - certs:/certs:ro
+
+  echo:
+    <<: *proxy
+    build:
+      <<: *python-build
+      dockerfile: services/echo/Dockerfile
+    environment:
+      TLS_CERT_FILE: /certs/echo.crt
+      TLS_KEY_FILE: /certs/echo.key
+      LAB_KEY_FILE: /certs/lab-key
+    volumes:
+      - certs:/certs:ro
+
+  nginx:
+    <<: *proxy
+    image: nginx:1.30.6@sha256:42c68eab6f7e22611786a9fe1d1c019e275c50185bd54b8f75dc2b9184322703
+    volumes:
+      - certs:/certs:ro
+      - ./proxies/nginx/${PROXY_PROFILE:-default}/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  apache:
+    <<: *proxy
+    image: httpd:2.4.71@sha256:32e9403360ab2f1047523e72f256527fb9aee68b342abf6ad03f0d629157f3d9
+    volumes:
+      - certs:/certs:ro
+      - ./proxies/apache/${PROXY_PROFILE:-default}/httpd.conf:/usr/local/apache2/conf/httpd.conf:ro
+
+  haproxy:
+    <<: *proxy
+    image: haproxy:3.4.7@sha256:f6d2ee87b47192d9cc8c22e88fef405122ff339859644883edc2a7d1827f87b3
+    volumes:
+      - certs:/certs:ro
+      - ./proxies/haproxy/${PROXY_PROFILE:-default}/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+
+  envoy:
+    <<: *proxy
+    image: envoyproxy/envoy:v1.40.2@sha256:8de97e654644827d62afdbf7e1d3dc9fee01a8690d410dd1c63a30dc6b6cecbb
+    volumes:
+      - certs:/certs:ro
+      - ./proxies/envoy/${PROXY_PROFILE:-default}/envoy.yaml:/etc/envoy/envoy.yaml:ro
+
+  traefik:
+    <<: *proxy
+    image: traefik:v3.7.19@sha256:aa942a00bce033c909bf1f7e861d93761be4b31a035f10d2410d33e38a8f41cf
+    volumes:
+      - certs:/certs:ro
+      - ./proxies/traefik/${PROXY_PROFILE:-default}/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./proxies/traefik/${PROXY_PROFILE:-default}/dynamic.yml:/etc/traefik/dynamic.yml:ro
+
+  # Campaign driver, started on demand: `make smoke`, or
+  # `docker compose --profile tools run --rm harness <command>`.
+  harness:
+    profiles: [tools]
+    build:
+      <<: *python-build
+      dockerfile: services/harness/Dockerfile
+    user: "${HOST_UID:-65534}:${HOST_GID:-65534}"
+    environment:
+      CERTS_DIR: /certs
+      RESULTS_DIR: /results
+      COMPOSE_FILE_PATH: /compose/docker-compose.yml
+      GIT_COMMIT: ${GIT_COMMIT:-}
+    volumes:
+      - certs:/certs:ro
+      - ./docker-compose.yml:/compose/docker-compose.yml:ro
+      - ../results/_local:/results
+
+volumes:
+  certs:

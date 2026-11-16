@@ -1,0 +1,176 @@
+---
+# Envoy, default profile: minimal TLS reverse proxy.
+# No size or limit setting (max_request_headers_kb, buffer limits, ...): every
+# limit keeps its built-in default. Do not add one here; raised limits belong
+# to the mitigated/ profile.
+static_resources:
+  listeners:
+    - name: bench
+      address:
+        socket_address: {address: 0.0.0.0, port_value: 8443}
+      filter_chains:
+        - transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                alpn_protocols: [h2, http/1.1]
+                tls_certificates:
+                  - certificate_chain: {filename: /certs/envoy.crt}
+                    private_key: {filename: /certs/envoy.key}
+          filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: bench
+                codec_type: AUTO
+                # Keep the request identifier chosen by the harness.
+                preserve_external_request_id: true
+                # The access log holds no URI and no header value other than
+                # the request identifier: both can carry tokens.
+                access_log:
+                  - name: envoy.access_loggers.stdout
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog
+                      log_format:
+                        text_format_source:
+                          inline_string: "%START_TIME% request_id=%REQ(X-REQUEST-ID)% status=%RESPONSE_CODE% flags=%RESPONSE_FLAGS%\n"
+                # Role of this hop in the response: "origin" on the replies
+                # Envoy produces itself, "proxied" on the routed ones.
+                local_reply_config:
+                  mappers:
+                    - filter:
+                        status_code_filter:
+                          comparison:
+                            op: GE
+                            value: {default_value: 100, runtime_key: bench.local_reply}
+                      headers_to_add:
+                        - header: {key: X-Hop-Envoy, value: origin}
+                          append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                http_filters:
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                route_config:
+                  name: bench
+                  virtual_hosts:
+                    - name: bench
+                      domains: ["*"]
+                      response_headers_to_add:
+                        - header: {key: X-Hop-Envoy, value: proxied}
+                          append_action: ADD_IF_ABSENT
+                      routes:
+                        # Two-hop chains: /via/<name>/ goes to that
+                        # intermediary, which sends it to the echo backend.
+                        # The request target is never rewritten.
+                        - match: {prefix: /via/nginx/}
+                          route: {cluster: nginx}
+                        - match: {prefix: /via/apache/}
+                          route: {cluster: apache}
+                        - match: {prefix: /via/haproxy/}
+                          route: {cluster: haproxy}
+                        - match: {prefix: /via/traefik/}
+                          route: {cluster: traefik}
+                        - match: {prefix: /}
+                          route: {cluster: echo}
+  clusters:
+    - name: echo
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: echo
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: echo, port_value: 8443}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: echo
+          common_tls_context:
+            validation_context:
+              trusted_ca: {filename: /certs/ca.crt}
+              match_typed_subject_alt_names:
+                - san_type: DNS
+                  matcher: {exact: echo}
+    - name: nginx
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: nginx
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: nginx, port_value: 8443}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: nginx
+          common_tls_context:
+            validation_context:
+              trusted_ca: {filename: /certs/ca.crt}
+              match_typed_subject_alt_names:
+                - san_type: DNS
+                  matcher: {exact: nginx}
+    - name: apache
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: apache
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: apache, port_value: 8443}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: apache
+          common_tls_context:
+            validation_context:
+              trusted_ca: {filename: /certs/ca.crt}
+              match_typed_subject_alt_names:
+                - san_type: DNS
+                  matcher: {exact: apache}
+    - name: haproxy
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: haproxy
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: haproxy, port_value: 8443}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: haproxy
+          common_tls_context:
+            validation_context:
+              trusted_ca: {filename: /certs/ca.crt}
+              match_typed_subject_alt_names:
+                - san_type: DNS
+                  matcher: {exact: haproxy}
+    - name: traefik
+      type: STRICT_DNS
+      load_assignment:
+        cluster_name: traefik
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: {address: traefik, port_value: 8443}
+      transport_socket:
+        name: envoy.transport_sockets.tls
+        typed_config:
+          "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+          sni: traefik
+          common_tls_context:
+            validation_context:
+              trusted_ca: {filename: /certs/ca.crt}
+              match_typed_subject_alt_names:
+                - san_type: DNS
+                  matcher: {exact: traefik}

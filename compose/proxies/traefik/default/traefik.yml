@@ -1,0 +1,34 @@
+---
+# Traefik, default profile: minimal TLS reverse proxy (static configuration).
+# No size or limit setting (maxHeaderBytes, buffering, ...): every limit keeps
+# its built-in default. Do not add one here; raised limits belong to the
+# mitigated/ profile.
+entryPoints:
+  bench:
+    address: ":8443"
+
+providers:
+  file:
+    filename: /etc/traefik/dynamic.yml
+
+serversTransport:
+  rootCAs:
+    - /certs/ca.crt
+
+log:
+  level: INFO
+
+# The access log holds no URI and no header value other than the request
+# identifier: both can carry tokens.
+accessLog:
+  format: json
+  fields:
+    defaultMode: drop
+    names:
+      StartUTC: keep
+      DownstreamStatus: keep
+      OriginStatus: keep
+    headers:
+      defaultMode: drop
+      names:
+        X-Request-Id: keep
