@@ -1,0 +1,14 @@
+---
+name: id_token_minimal
+description: OpenID Connect ID token restricted to the required claims.
+source: OpenID Connect Core 1.0, Section 2 (required claims iss, sub, aud, exp, iat)
+header:
+  typ: JWT
+  embed_jwk: false
+claims:
+  sub: "248289761001"
+  aud: bench-client
+dynamic:
+  iss: issuer
+  iat: now
+  exp: now+300

@@ -1,0 +1,16 @@
+---
+name: dpop_proof
+description: >-
+  DPoP proof presented with an access token to a protected resource. The
+  public key is embedded in the jwk header parameter.
+source: RFC 9449, Section 4.2 (typ dpop+jwt, jwk, jti, htm, htu, iat, ath)
+header:
+  typ: dpop+jwt
+  embed_jwk: true
+claims:
+  htm: GET
+  htu: https://api.bench.test/resource
+dynamic:
+  jti: uuid
+  iat: now
+  ath: random:32

@@ -1,0 +1,283 @@
+---
+# Single source of truth for signature and public key sizes, in bytes.
+# No size is hard-coded anywhere else in the repository.
+#
+# Every value was read in the cited text on the `accessed` date. Nothing is
+# quoted from memory. A value that could not be verified is left out.
+#
+# Fields
+#   name               variant identifier used across the bench
+#   family             classical | ml-dsa | composite | fn-dsa | slh-dsa
+#   jose_alg           value of the JWS "alg" header parameter
+#   jwk_kty            JWK key type used to represent the public key
+#   signature_bytes    size of the raw signature value carried in the JWS
+#   signature_length   fixed | maximum (maximum: the encoding is variable
+#                      and the cited text gives an upper bound; the bench
+#                      calibrates on that bound)
+#   public_key_bytes   size of the raw public key
+#   status             final | draft (state of the text giving the sizes)
+#   source             document, section and table for the sizes
+#   jose_source        document and section registering `jose_alg`
+#   note               optional remarks
+schema_version: 1
+accessed: "2026-11-16"
+
+variants:
+  # --- Classical baselines ---------------------------------------------------
+  - name: ES256
+    family: classical
+    jose_alg: ES256
+    jwk_kty: EC
+    signature_bytes: 64
+    signature_length: fixed
+    public_key_bytes: 64
+    status: final
+    source: >-
+      RFC 7518 (May 2015), Section 3.4: the JWS Signature value is the
+      64-octet sequence R || S. Public key: Section 6.2.1, parameters "x"
+      and "y", each of the full size of a P-256 coordinate (32 octets, raw
+      x || y).
+    jose_source: RFC 7518, Section 3.4
+
+  - name: RS256
+    family: classical
+    jose_alg: RS256
+    jwk_kty: RSA
+    signature_bytes: 256
+    signature_length: fixed
+    public_key_bytes: 270
+    status: final
+    source: >-
+      RFC 8017 (November 2016), Section 8.2.1: the signature is an octet
+      string of length k, the length in octets of the RSA modulus; k = 256
+      for the 2048-bit modulus used here (RFC 7518, Section 3.3 requires
+      2048 bits or more). Public key: DER encoding of RSAPublicKey
+      (RFC 8017, Appendix A.1.1) for a 2048-bit modulus and e = 65537.
+    jose_source: RFC 7518, Section 3.3
+    note: >-
+      270 follows from the DER encoding rules, it is not printed in the RFC.
+      A unit test checks it, and the signature size, against a freshly
+      generated key.
+
+  # --- ML-DSA ----------------------------------------------------------------
+  - name: ML-DSA-44
+    family: ml-dsa
+    jose_alg: ML-DSA-44
+    jwk_kty: AKP
+    signature_bytes: 2420
+    signature_length: fixed
+    public_key_bytes: 1312
+    status: final
+    source: >-
+      FIPS 204 (August 13, 2024), Section 4, Table 2; repeated in RFC 9964
+      (May 2026), Section 5, Table 1.
+    jose_source: RFC 9964, Sections 3 and 8.1.4
+
+  - name: ML-DSA-65
+    family: ml-dsa
+    jose_alg: ML-DSA-65
+    jwk_kty: AKP
+    signature_bytes: 3309
+    signature_length: fixed
+    public_key_bytes: 1952
+    status: final
+    source: >-
+      FIPS 204 (August 13, 2024), Section 4, Table 2; repeated in RFC 9964
+      (May 2026), Section 5, Table 1.
+    jose_source: RFC 9964, Sections 3 and 8.1.4
+
+  - name: ML-DSA-87
+    family: ml-dsa
+    jose_alg: ML-DSA-87
+    jwk_kty: AKP
+    signature_bytes: 4627
+    signature_length: fixed
+    public_key_bytes: 2592
+    status: final
+    source: >-
+      FIPS 204 (August 13, 2024), Section 4, Table 2; repeated in RFC 9964
+      (May 2026), Section 5, Table 1.
+    jose_source: RFC 9964, Sections 3 and 8.1.4
+
+  # --- FN-DSA ----------------------------------------------------------------
+  # FIPS 206 was not published on the access date: it is not listed among the
+  # FIPS publications of the NIST Computer Security Resource Center. The sizes
+  # below come from the IETF draft that will register FN-DSA for JOSE, which
+  # itself describes FIPS 206 as "expected to be published in late 2026 early
+  # 2027". They are provisional and must be re-read in FIPS 206 once it is
+  # published. The draft does not say whether the signature encoding is of
+  # fixed length.
+  - name: FN-DSA-512
+    family: fn-dsa
+    jose_alg: FN-DSA-512
+    jwk_kty: AKP
+    signature_bytes: 666
+    signature_length: fixed
+    public_key_bytes: 897
+    status: draft
+    source: >-
+      draft-ietf-cose-falcon-05 (Internet-Draft, 1 November 2026),
+      Section 1, Table 1.
+    jose_source: draft-ietf-cose-falcon-05, Sections 3 and 4
+    note: >-
+      Provisional: FIPS 206 unpublished on the access date. `fixed` is the
+      bench's reading of a table that gives a single value per parameter set.
+
+  - name: FN-DSA-1024
+    family: fn-dsa
+    jose_alg: FN-DSA-1024
+    jwk_kty: AKP
+    signature_bytes: 1280
+    signature_length: fixed
+    public_key_bytes: 1793
+    status: draft
+    source: >-
+      draft-ietf-cose-falcon-05 (Internet-Draft, 1 November 2026),
+      Section 1, Table 1.
+    jose_source: draft-ietf-cose-falcon-05, Sections 3 and 4
+    note: >-
+      Provisional: FIPS 206 unpublished on the access date. `fixed` is the
+      bench's reading of a table that gives a single value per parameter set.
+
+  # --- Composite ML-DSA (PQ/T hybrid) ----------------------------------------
+  # The JOSE draft registers the algorithm names and delegates key and
+  # signature serialization to draft-ietf-lamps-pq-composite-sigs-19, since
+  # published as RFC 10073. Sizes are read in RFC 10073, Appendix A, Table 6,
+  # whose values are identical to Table 4 of that draft -19. Values marked
+  # with an asterisk there are maxima: the ECDSA component is a DER-encoded
+  # Ecdsa-Sig-Value of variable length.
+  - name: ML-DSA-44-ES256
+    family: composite
+    jose_alg: ML-DSA-44-ES256
+    jwk_kty: AKP
+    signature_bytes: 2492
+    signature_length: maximum
+    public_key_bytes: 1377
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA44-ECDSA-P256-SHA256.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-65-ES256
+    family: composite
+    jose_alg: ML-DSA-65-ES256
+    jwk_kty: AKP
+    signature_bytes: 3381
+    signature_length: maximum
+    public_key_bytes: 2017
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA65-ECDSA-P256-SHA512.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-65-ES384
+    family: composite
+    jose_alg: ML-DSA-65-ES384
+    jwk_kty: AKP
+    signature_bytes: 3413
+    signature_length: maximum
+    public_key_bytes: 2049
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA65-ECDSA-P384-SHA512.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-87-ES384
+    family: composite
+    jose_alg: ML-DSA-87-ES384
+    jwk_kty: AKP
+    signature_bytes: 4731
+    signature_length: maximum
+    public_key_bytes: 2689
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA87-ECDSA-P384-SHA512.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-44-Ed25519
+    family: composite
+    jose_alg: ML-DSA-44-Ed25519
+    jwk_kty: AKP
+    signature_bytes: 2484
+    signature_length: fixed
+    public_key_bytes: 1344
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA44-Ed25519-SHA512.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-65-Ed25519
+    family: composite
+    jose_alg: ML-DSA-65-Ed25519
+    jwk_kty: AKP
+    signature_bytes: 3373
+    signature_length: fixed
+    public_key_bytes: 1984
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA65-Ed25519-SHA512.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  - name: ML-DSA-87-Ed448
+    family: composite
+    jose_alg: ML-DSA-87-Ed448
+    jwk_kty: AKP
+    signature_bytes: 4741
+    signature_length: fixed
+    public_key_bytes: 2649
+    status: final
+    source: >-
+      RFC 10073 (November 2026), Appendix A, Table 6, row
+      id-MLDSA87-Ed448-SHAKE256.
+    jose_source: >-
+      draft-ietf-jose-pq-composite-sigs-06 (Internet-Draft, 20 October 2026),
+      Sections 3 and 4.1, Table 4.
+
+  # --- SLH-DSA (control variant) ---------------------------------------------
+  # FIPS 205, Table 2 defines twelve parameter sets. Only the two that the
+  # JOSE draft registers are listed: the others have no JWS "alg" value.
+  - name: SLH-DSA-SHA2-128s
+    family: slh-dsa
+    jose_alg: SLH-DSA-SHA2-128s
+    jwk_kty: AKP
+    signature_bytes: 7856
+    signature_length: fixed
+    public_key_bytes: 32
+    status: final
+    source: >-
+      FIPS 205 (August 13, 2024), Section 11, Table 2.
+    jose_source: >-
+      draft-ietf-cose-sphincs-plus-10 (Internet-Draft, 28 July 2026),
+      Sections 3, 4 and 5, Table 1.
+
+  - name: SLH-DSA-SHAKE-128s
+    family: slh-dsa
+    jose_alg: SLH-DSA-SHAKE-128s
+    jwk_kty: AKP
+    signature_bytes: 7856
+    signature_length: fixed
+    public_key_bytes: 32
+    status: final
+    source: >-
+      FIPS 205 (August 13, 2024), Section 11, Table 2.
+    jose_source: >-
+      draft-ietf-cose-sphincs-plus-10 (Internet-Draft, 28 July 2026),
+      Sections 3, 4 and 5, Table 1.

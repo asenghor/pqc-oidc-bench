@@ -1,0 +1,46 @@
+---
+name: access_token_loaded
+description: >-
+  RFC 9068 access token carrying authorization attributes: twenty
+  directory-style groups (distinguished names) and a few roles.
+source: RFC 9068, Sections 2.1, 2.2 and 2.2.3 (authorization claims groups and roles, as defined in RFC 7643)
+header:
+  typ: at+jwt
+  embed_jwk: false
+claims:
+  sub: "248289761001"
+  aud: https://api.bench.test
+  client_id: bench-client
+  scope: openid profile email
+  groups:
+    - CN=APP-Finance-Reporting-Readers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-Finance-Reporting-Editors,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-Finance-Ledger-Approvers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-HR-Directory-Readers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-HR-Payroll-Auditors,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-CRM-Sales-Users,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-CRM-Sales-Managers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-ERP-Procurement-Buyers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-ERP-Procurement-Approvers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-Wiki-Engineering-Editors,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-SourceControl-Developers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-SourceControl-Maintainers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-Ticketing-Support-Agents,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=APP-Monitoring-Dashboards-Viewers,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=SEC-VPN-Remote-Access,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=SEC-MFA-Enforced-Users,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=SEC-Privileged-Workstation-Users,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=ORG-Engineering-Platform-Team,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=ORG-Engineering-All-Staff,OU=Groups,OU=Corp,DC=example,DC=com
+    - CN=ORG-Site-Paris-Employees,OU=Groups,OU=Corp,DC=example,DC=com
+  roles:
+    - reporting.reader
+    - reporting.editor
+    - ledger.approver
+    - procurement.buyer
+    - platform.developer
+dynamic:
+  iss: issuer
+  iat: now
+  exp: now+300
+  jti: uuid

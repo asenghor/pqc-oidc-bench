@@ -1,0 +1,17 @@
+---
+name: access_token_rfc9068
+description: JWT access token with the claims required by RFC 9068, plus scope.
+source: RFC 9068, Sections 2.1 (typ at+jwt), 2.2 (required claims) and 2.2.3 (scope)
+header:
+  typ: at+jwt
+  embed_jwk: false
+claims:
+  sub: "248289761001"
+  aud: https://api.bench.test
+  client_id: bench-client
+  scope: openid profile email
+dynamic:
+  iss: issuer
+  iat: now
+  exp: now+300
+  jti: uuid
