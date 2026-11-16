@@ -1,4 +1,4 @@
 [tool.pytest.ini_options]
 testpaths = ["services"]
-pythonpath = ["services/emitter", "services/echo"]
+pythonpath = ["services/emitter", "services/echo", "services/harness"]
 addopts = "--import-mode=importlib --strict-markers -q"

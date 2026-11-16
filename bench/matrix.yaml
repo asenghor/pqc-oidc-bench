@@ -1,0 +1,50 @@
+---
+# Reduced test matrix of the local bench. The harness runs the Cartesian
+# product of the axes below. The full campaign matrix comes with phase 6.
+#
+# variants          names of bench/sizes.yaml
+# profiles          file names of bench/profiles/
+# header_variants   kid | jwk | x5c
+# channels          authorization | dpop | cookie | query | form_post
+# chains            intermediaries crossed, in order; [] is the echo backend
+#                   reached directly; two hops at most
+# http_versions     version the harness asks for on its own connection
+name: reduced
+config_profile: default
+
+intermediaries: [nginx, apache, haproxy, envoy, traefik]
+
+variants:
+  - ES256
+  - RS256
+  - FN-DSA-512
+  - ML-DSA-44
+  - ML-DSA-65
+  - ML-DSA-87
+  - ML-DSA-65-ES256
+  - SLH-DSA-SHA2-128s
+
+profiles:
+  - access_token_rfc9068
+
+header_variants:
+  - kid
+
+channels:
+  - authorization
+  - cookie
+  - query
+
+chains:
+  - []
+  - [nginx]
+  - [apache]
+  - [haproxy]
+  - [envoy]
+  - [traefik]
+  - [traefik, nginx]
+  - [nginx, apache]
+
+http_versions:
+  - "1.1"
+  - "2"

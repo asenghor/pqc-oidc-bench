@@ -3,6 +3,12 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
 COMPOSE_FILE := compose/docker-compose.yml
+COMPOSE      := docker compose -f $(COMPOSE_FILE) --profile tools
+
+# The harness writes its results as the invoking user.
+export HOST_UID   := $(shell id -u)
+export HOST_GID   := $(shell id -g)
+export GIT_COMMIT := $(shell git rev-parse HEAD 2>/dev/null)
 TF_ENV       := terraform/envs/lab
 TF_BOOTSTRAP := terraform/bootstrap
 
@@ -35,14 +41,17 @@ test: ## Run the Python unit tests (needs requirements-dev.txt and the service r
 secrets-scan: ## Scan the whole Git history with gitleaks (run before every push)
 	gitleaks git --config .gitleaks.toml --redact --verbose .
 
-local-up: ## Start the local stack over HTTPS (phase 1)
-	$(call not_yet,phase 1)
+local-up: ## Start the local stack over HTTPS and wait until it answers
+	@mkdir -p results/_local
+	$(COMPOSE) up -d --build --remove-orphans certs emitter echo nginx apache haproxy envoy traefik
+	$(COMPOSE) run --rm --build harness wait
 
-local-down: ## Stop the local stack and remove its volumes (phase 1)
-	$(call not_yet,phase 1)
+local-down: ## Stop the local stack and discard its volume (certificates, lab key)
+	$(COMPOSE) down --volumes --remove-orphans
 
-smoke: ## Smoke test against the local stack or the instance (phase 1)
-	$(call not_yet,phase 1)
+smoke: ## Smoke test against the local stack: acceptance scenarios, then the reduced matrix
+	@mkdir -p results/_local
+	$(COMPOSE) run --rm --build harness smoke
 
 campaign: ## Run the full matrix and write results/<date>-<id>/ (phase 6)
 	$(call not_yet,phase 6)
